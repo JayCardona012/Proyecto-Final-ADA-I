@@ -1,9 +1,7 @@
 from matrices.COO import generar_coo_desde_archivo
 from matrices.CSR import generar_csr_desde_archivo
 from matrices.CSC import generar_csc_desde_archivo
-from operaciones.operaciones import obtener_elemento, seleccionar_formato
-
-
+from operaciones.operaciones import obtener_elemento, seleccionar_formato, obtener_fila, obtener_columna, modificar_elemento, guardar_representacion
 def menu_principal():
     while True:
         print("\n--- Menú Principal ---")
@@ -65,12 +63,17 @@ def menu_otras_operaciones():
         print("\n--- Menú Otras Operaciones ---")
         print("1. Obtener matriz a partir de una representación")
         print("2. Obtener elemento dados sus índices (i, j)")
-        print("3. Volver al menú principal")
+        print("3. Obtener una fila dado su índice (i)")
+        print("4. Obtener una columna dado su índice (j)")
+        print("5. Modificar un elemento dados sus indices (i, j) y su valor (x)")
+        print("6. Matriz transpuesta:  aun no esta funcional")
+        print("7. Volver al menu principal")
         
         opcion = input("Seleccione una opción: ")
         
         if opcion == "1":
             menu_obtener_matriz(archivo_representacion, archivo_salida)
+
         elif opcion == "2":
             formato = seleccionar_formato()
             if validar_representacion(archivo_representacion, formato):
@@ -84,7 +87,50 @@ def menu_otras_operaciones():
                     print(f"Error: {e}")
             else:
                 print("Error: El archivo no contiene una representación válida para el formato seleccionado.")
+
         elif opcion == "3":
+            formato = seleccionar_formato()
+            if validar_representacion(archivo_representacion, formato):
+                i = int(input("Ingrese el índice de la fila (i): "))
+                representacion = cargar_representacion(archivo_representacion, formato)
+                try:
+                    fila = obtener_fila(representacion, formato, i)
+                    print(f"La fila {i} es: {fila}")
+                except IndexError as e:
+                    print(f"Error: {e}")
+            else:
+                print("Error: El archivo no contiene una representación válida para el formato seleccionado.")
+
+
+
+        elif opcion == "4":
+            formato = seleccionar_formato()
+            if validar_representacion(archivo_representacion, formato):
+                j = int(input("Ingrese el índice de la columna (j): "))
+                representacion = cargar_representacion(archivo_representacion, formato)
+                try:
+                    columna = obtener_columna(representacion, formato, j)
+                    print(f"La columna {j} es: {columna}")
+                except IndexError as e:
+                    print(f"Error: {e}")
+            else:
+                print("Error: El archivo no contiene una representación válida para el formato seleccionado.")
+
+        elif opcion == "5":
+            formato = seleccionar_formato()
+            if validar_representacion(archivo_representacion, formato):
+                i = int(input("Ingrese el índice de la fila (i): "))
+                j = int(input("Ingrese el índice de la columna (j): "))
+                x = int(input("Ingrese el nuevo valor (x): "))
+                representacion = cargar_representacion(archivo_representacion, formato)
+                representacion_modificada = modificar_elemento(representacion, formato, i, j, x)
+                guardar_representacion(representacion_modificada, formato, archivo_representacion)
+                print(f"Elemento en ({i}, {j}) modificado a {x}.")
+            
+            else:
+                print("Error: El archivo no contiene una representación válida para el formato seleccionado.")
+                
+        elif opcion == "7":
             break
         else:
             print("Opción inválida. Intente nuevamente.")
@@ -97,6 +143,7 @@ def menu_obtener_matriz(archivo_representacion, archivo_salida):
         print("2. Representación CSR")
         print("3. Representación CSC")
         print("4. Volver al menú anterior")
+        
         
         opcion = input("Seleccione una opción: ")
         
@@ -131,16 +178,7 @@ def menu_obtener_matriz(archivo_representacion, archivo_salida):
 
 
 def validar_representacion(archivo, formato):
-    """
-    Valida que el archivo tenga la estructura correcta para la representación seleccionada.
-
-    Args:
-        archivo (str): Ruta del archivo a validar.
-        formato (str): Formato esperado ("COO", "CSR", "CSC").
-
-    Returns:
-        bool: True si es válido, False en caso contrario.
-    """
+ 
     try:
         with open(archivo, 'r') as f:
             contenido = f.readlines()
@@ -165,19 +203,10 @@ def validar_representacion(archivo, formato):
         print(f"Error al validar la representación: {e}")
         return False
 
-
-
-
             
 
 def guardar_matriz_en_archivo(matriz, archivo_salida):
-    """
-    Guarda una matriz dispersa en un archivo.
-
-    Args:
-        matriz (list[list[int]]): La matriz dispersa.
-        archivo_salida (str): Ruta del archivo de salida.
-    """
+ 
     with open(archivo_salida, 'w') as f:
         for fila in matriz:
             f.write(" ".join(map(str, fila)) + "\n")
@@ -222,23 +251,23 @@ def reconstruir_matriz_coo(representacion):
     return matriz
 
 def reconstruir_matriz_csr(representacion):
-    m = len(representacion["p-filas"]) - 1
+    m = len(representacion["p_filas"]) - 1
     n = max(representacion["columnas"]) + 1
     matriz = [[0] * n for _ in range(m)]
     for fila in range(m):
-        inicio = representacion["p-filas"][fila]
-        fin = representacion["p-filas"][fila + 1]
+        inicio = representacion["p_filas"][fila]
+        fin = representacion["p_filas"][fila + 1]
         for idx in range(inicio, fin):
             matriz[fila][representacion["columnas"][idx]] = representacion["valores"][idx]
     return matriz
 
 def reconstruir_matriz_csc(representacion):
-    n = len(representacion["p-columnas"]) - 1
+    n = len(representacion["p_columnas"]) - 1
     m = max(representacion["filas"]) + 1
     matriz = [[0] * n for _ in range(m)]
     for columna in range(n):
-        inicio = representacion["p-columnas"][columna]
-        fin = representacion["p-columnas"][columna + 1]
+        inicio = representacion["p_columnas"][columna]
+        fin = representacion["p_columnas"][columna + 1]
         for idx in range(inicio, fin):
             matriz[representacion["filas"][idx]][columna] = representacion["valores"][idx]
     return matriz
@@ -246,16 +275,7 @@ def reconstruir_matriz_csc(representacion):
 
 
 def cargar_representacion(archivo, formato):
-    """
-    Carga una representación de matriz desde un archivo.
 
-    Args:
-        archivo (str): Ruta del archivo.
-        formato (str): Formato de la representación ("COO", "CSR", "CSC").
-
-    Returns:
-        dict: Representación de la matriz.
-    """
     with open(archivo, 'r') as f:
         contenido = {line.split(":")[0].strip(): line.split(":")[1].strip() for line in f.readlines()}
     
@@ -279,9 +299,6 @@ def cargar_representacion(archivo, formato):
         }
     else:
         raise ValueError("Formato no soportado.")
-
-
-
 
 
 
