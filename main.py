@@ -1,7 +1,7 @@
 from matrices.COO import generar_coo_desde_archivo
 from matrices.CSR import generar_csr_desde_archivo
 from matrices.CSC import generar_csc_desde_archivo
-from operaciones.operaciones import obtener_elemento, seleccionar_formato, obtener_fila, obtener_columna, modificar_elemento, guardar_representacion
+from operaciones.operaciones import obtener_elemento, seleccionar_formato, obtener_fila, obtener_columna, modificar_elemento, guardar_representacion, sumar_matrices, guardar_representacion_operaciones
 def menu_principal():
     while True:
         print("\n--- Menú Principal ---")
@@ -20,7 +20,6 @@ def menu_principal():
             break
         else:
             print("Opción inválida. Intente nuevamente.")
-
 
 def menu_obtener_representacion():
     archivo_matriz = "entradaArchivos/matriz.txt"
@@ -51,7 +50,6 @@ def menu_obtener_representacion():
         else:
             print("Opción inválida. Intente nuevamente.")
 
-
 def menu_otras_operaciones():
     """
     Muestra el menú para realizar otras operaciones.
@@ -66,7 +64,7 @@ def menu_otras_operaciones():
         print("3. Obtener una fila dado su índice (i)")
         print("4. Obtener una columna dado su índice (j)")
         print("5. Modificar un elemento dados sus indices (i, j) y su valor (x)")
-        print("6. Matriz transpuesta:  aun no esta funcional")
+        print("6. suma de matrices")
         print("7. Volver al menu principal")
         
         opcion = input("Seleccione una opción: ")
@@ -101,8 +99,6 @@ def menu_otras_operaciones():
             else:
                 print("Error: El archivo no contiene una representación válida para el formato seleccionado.")
 
-
-
         elif opcion == "4":
             formato = seleccionar_formato()
             if validar_representacion(archivo_representacion, formato):
@@ -129,6 +125,25 @@ def menu_otras_operaciones():
             
             else:
                 print("Error: El archivo no contiene una representación válida para el formato seleccionado.")
+
+        elif opcion == "6":  
+            formato = seleccionar_formato()  # Seleccionar el formato (COO, CSR o CSC)
+            if validar_representacion("entradaArchivos/representacion1.txt", formato) and validar_representacion("entradaArchivos/representacion2.txt", formato):
+                # Cargar las representaciones desde los archivos
+                matriz1 = cargar_representacion("entradaArchivos/representacion1.txt", formato)
+                matriz2 = cargar_representacion("entradaArchivos/representacion2.txt", formato)
+                try:
+                    # Realizar la suma
+                    resultado = sumar_matrices(matriz1, matriz2, formato)
+                    # Guardar el resultado en 'representacionSalida.txt'
+                    guardar_representacion_operaciones(resultado, "entradaArchivos/representacionSalida.txt", formato)
+                    print(f"La suma de las matrices se ha guardado en 'entradaArchivos/representacionSalida.txt'.")
+                except ValueError as e:
+                    print(f"Error al sumar las matrices: {e}")
+            else:
+                print("Error: Una o ambas representaciones no coinciden con el formato seleccionado.")
+
+
                 
         elif opcion == "7":
             break
@@ -271,8 +286,6 @@ def reconstruir_matriz_csc(representacion):
         for idx in range(inicio, fin):
             matriz[representacion["filas"][idx]][columna] = representacion["valores"][idx]
     return matriz
-
-
 
 def cargar_representacion(archivo, formato):
 

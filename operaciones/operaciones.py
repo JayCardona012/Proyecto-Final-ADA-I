@@ -234,7 +234,7 @@ def modificar_elemento(representacion, formato, i, j, x):
     else:
         raise ValueError("Formato de representación no válido.")
 
-
+#guarda la representacion cuando se le pasa una matriz dispersa
 def guardar_representacion(representacion, formato, archivo_salida):
 
     with open(archivo_salida, 'w') as f:
@@ -251,3 +251,157 @@ def guardar_representacion(representacion, formato, archivo_salida):
             f.write(f"filas: [{' '.join(map(str, representacion['filas']))}]\n")
             f.write(f"p-columnas: [{' '.join(map(str, representacion['p-columnas']))}]\n")
 
+
+#esta funcion guarda la representacion de la suma de las representaciones, se espera usar esta misma funcion para la multiplicacion
+def guardar_representacion_operaciones(matriz, archivo_salida, formato):
+    
+    with open(archivo_salida, 'w') as f:
+        if formato == "COO":
+            f.write(f"valores: {matriz['valores']}\n")
+            f.write(f"filas: {matriz['filas']}\n")
+            f.write(f"columnas: {matriz['columnas']}\n")
+        elif formato == "CSR":
+            f.write(f"valores: {matriz['valores']}\n")
+            f.write(f"columnas: {matriz['columnas']}\n")
+            f.write(f"p-filas: {matriz['p-filas']}\n")
+        elif formato == "CSC":
+            f.write(f"valores: {matriz['valores']}\n")
+            f.write(f"filas: {matriz['filas']}\n")
+            f.write(f"p-columnas: {matriz['p-columnas']}\n")
+        else:
+            raise ValueError("Formato desconocido. No se puede guardar la representación.")
+        
+#Funcion sumar matrices
+def sumar_matrices(matriz1, matriz2, formato):
+    """
+    Suma dos matrices dispersas representadas en el mismo formato.
+
+    Args:
+        matriz1 (dict): Representación de la primera matriz.
+        matriz2 (dict): Representación de la segunda matriz.
+        formato (str): Formato de la representación ("COO", "CSR", "CSC").
+
+    Returns:
+        dict: Representación de la matriz resultante.
+
+    Raises:
+        ValueError: Si los formatos no coinciden o las dimensiones no son compatibles.
+    """
+    if formato not in {"COO", "CSR", "CSC"}:
+        raise ValueError("Formato no válido. Solo se admiten COO, CSR o CSC.")
+
+    if formato == "COO":
+        return sumar_matrices_coo(matriz1, matriz2)
+    elif formato == "CSR":
+        return sumar_matrices_csr(matriz1, matriz2)
+    elif formato == "CSC":
+        return sumar_matrices_csc(matriz1, matriz2)
+
+
+def sumar_matrices_coo(matriz1, matriz2):
+    """
+    Suma dos matrices en formato COO.
+
+    Args:
+        matriz1 (dict): Primera matriz en formato COO.
+        matriz2 (dict): Segunda matriz en formato COO.
+
+    Returns:
+        dict: Matriz resultante en formato COO.
+    """
+    if (max(matriz1['filas']), max(matriz1['columnas'])) != (max(matriz2['filas']), max(matriz2['columnas'])):
+        raise ValueError("Las dimensiones de las matrices no coinciden.")
+    
+    valores = matriz1['valores'] + matriz2['valores']
+    filas = matriz1['filas'] + matriz2['filas']
+    columnas = matriz1['columnas'] + matriz2['columnas']
+
+    # Consolidar valores para índices repetidos
+    resultado = {}
+    for v, f, c in zip(valores, filas, columnas):
+        if (f, c) in resultado:
+            resultado[(f, c)] += v
+        else:
+            resultado[(f, c)] = v
+
+    filas, columnas, valores = zip(*((f, c, v) for (f, c), v in resultado.items() if v != 0))
+
+    return {
+        'valores': list(valores),
+        'filas': list(filas),
+        'columnas': list(columnas)
+    }
+
+
+def sumar_matrices_csr(matriz1, matriz2):
+    """
+    Suma dos matrices en formato CSR.
+
+    Args:
+        matriz1 (dict): Primera matriz en formato CSR.
+        matriz2 (dict): Segunda matriz en formato CSR.
+
+    Returns:
+        dict: Matriz resultante en formato CSR.
+    """
+    if len(matriz1['p-filas']) != len(matriz2['p-filas']):
+        raise ValueError("Las dimensiones de las matrices no coinciden.")
+    
+    filas = len(matriz1['p-filas']) - 1
+    resultado = {'valores': [], 'columnas': [], 'p-filas': [0]}
+    
+    for i in range(filas):
+        fila1 = {matriz1['columnas'][k]: matriz1['valores'][k]
+                 for k in range(matriz1['p-filas'][i], matriz1['p-filas'][i + 1])}
+        fila2 = {matriz2['columnas'][k]: matriz2['valores'][k]
+                 for k in range(matriz2['p-filas'][i], matriz2['p-filas'][i + 1])}
+        
+        suma_fila = {}
+        for col in set(fila1) | set(fila2):
+            suma_fila[col] = fila1.get(col, 0) + fila2.get(col, 0)
+
+        for col, val in sorted(suma_fila.items()):
+            if val != 0:
+                resultado['valores'].append(val)
+                resultado['columnas'].append(col)
+        
+        resultado['p-filas'].append(len(resultado['valores']))
+    
+    return resultado
+
+
+def sumar_matrices_csc(matriz1, matriz2):
+    """
+    Suma dos matrices en formato CSC.
+
+    Args:
+        matriz1 (dict): Primera matriz en formato CSC.
+        matriz2 (dict): Segunda matriz en formato CSC.
+
+    Returns:
+        dict: Matriz resultante en formato CSC.
+    """
+    if len(matriz1['p-columnas']) != len(matriz2['p-columnas']):
+        raise ValueError("Las dimensiones de las matrices no coinciden.")
+    
+    columnas = len(matriz1['p-columnas']) - 1
+    resultado = {'valores': [], 'filas': [], 'p-columnas': [0]}
+    
+    for j in range(columnas):
+        columna1 = {matriz1['filas'][k]: matriz1['valores'][k]
+                    for k in range(matriz1['p-columnas'][j], matriz1['p-columnas'][j + 1])}
+        columna2 = {matriz2['filas'][k]: matriz2['valores'][k]
+                    for k in range(matriz2['p-columnas'][j], matriz2['p-columnas'][j + 1])}
+        
+        suma_columna = {}
+        for fila in set(columna1) | set(columna2):
+            suma_columna[fila] = columna1.get(fila, 0) + columna2.get(fila, 0)
+
+        for fila, val in sorted(suma_columna.items()):
+            if val != 0:
+                resultado['valores'].append(val)
+                resultado['filas'].append(fila)
+        
+        resultado['p-columnas'].append(len(resultado['valores']))
+    
+    return resultado
