@@ -24,6 +24,7 @@ def obtener_elemento(representacion, formato, i, j):
                 return valores[idx]
         return 0
 
+
     elif formato == "CSC":
         valores = representacion["valores"]
         filas = representacion["filas"]
@@ -40,7 +41,6 @@ def obtener_elemento(representacion, formato, i, j):
 
     else:
         raise ValueError("Formato de representación no válido.")
-
 
 def seleccionar_formato():
 
@@ -59,7 +59,6 @@ def seleccionar_formato():
             return "CSC"
         else:
             print("Opción inválida. Intente nuevamente.")
-
 
 def obtener_fila(representacion, formato, i):
 
@@ -151,7 +150,6 @@ def obtener_columna(representacion, formato, j):
 
     else:
         raise ValueError("Formato de representación no válido.")
-
 
 def modificar_elemento(representacion, formato, i, j, x):
 
@@ -273,20 +271,7 @@ def guardar_representacion_operaciones(matriz, archivo_salida, formato):
         
 #Funcion sumar matrices
 def sumar_matrices(matriz1, matriz2, formato):
-    """
-    Suma dos matrices dispersas representadas en el mismo formato.
 
-    Args:
-        matriz1 (dict): Representación de la primera matriz.
-        matriz2 (dict): Representación de la segunda matriz.
-        formato (str): Formato de la representación ("COO", "CSR", "CSC").
-
-    Returns:
-        dict: Representación de la matriz resultante.
-
-    Raises:
-        ValueError: Si los formatos no coinciden o las dimensiones no son compatibles.
-    """
     if formato not in {"COO", "CSR", "CSC"}:
         raise ValueError("Formato no válido. Solo se admiten COO, CSR o CSC.")
 
@@ -299,16 +284,7 @@ def sumar_matrices(matriz1, matriz2, formato):
 
 
 def sumar_matrices_coo(matriz1, matriz2):
-    """
-    Suma dos matrices en formato COO.
 
-    Args:
-        matriz1 (dict): Primera matriz en formato COO.
-        matriz2 (dict): Segunda matriz en formato COO.
-
-    Returns:
-        dict: Matriz resultante en formato COO.
-    """
     if (max(matriz1['filas']), max(matriz1['columnas'])) != (max(matriz2['filas']), max(matriz2['columnas'])):
         raise ValueError("Las dimensiones de las matrices no coinciden.")
     
@@ -334,16 +310,7 @@ def sumar_matrices_coo(matriz1, matriz2):
 
 
 def sumar_matrices_csr(matriz1, matriz2):
-    """
-    Suma dos matrices en formato CSR.
 
-    Args:
-        matriz1 (dict): Primera matriz en formato CSR.
-        matriz2 (dict): Segunda matriz en formato CSR.
-
-    Returns:
-        dict: Matriz resultante en formato CSR.
-    """
     if len(matriz1['p-filas']) != len(matriz2['p-filas']):
         raise ValueError("Las dimensiones de las matrices no coinciden.")
     
@@ -371,16 +338,7 @@ def sumar_matrices_csr(matriz1, matriz2):
 
 
 def sumar_matrices_csc(matriz1, matriz2):
-    """
-    Suma dos matrices en formato CSC.
 
-    Args:
-        matriz1 (dict): Primera matriz en formato CSC.
-        matriz2 (dict): Segunda matriz en formato CSC.
-
-    Returns:
-        dict: Matriz resultante en formato CSC.
-    """
     if len(matriz1['p-columnas']) != len(matriz2['p-columnas']):
         raise ValueError("Las dimensiones de las matrices no coinciden.")
     
@@ -405,3 +363,94 @@ def sumar_matrices_csc(matriz1, matriz2):
         resultado['p-columnas'].append(len(resultado['valores']))
     
     return resultado
+
+def transponer_matriz(matriz, formato):
+    if formato == "COO":
+       
+        return {
+            "valores": matriz["valores"],
+            "filas": matriz["columnas"],
+            "columnas": matriz["filas"]
+        }
+    
+    elif formato == "CSR":
+        
+        valores = matriz["valores"]
+        columnas = matriz["columnas"]
+        p_filas = matriz["p-filas"]
+
+        # Número de filas en la matriz original = número de columnas en la transpuesta
+        num_filas_original = len(p_filas) - 1
+        num_columnas = max(columnas) + 1
+
+        # Paso 1: Contar elementos en cada columna (que serán filas en la transpuesta)
+        contador_filas_transpuesta = [0] * num_columnas
+        for col in columnas:
+            contador_filas_transpuesta[col] += 1
+
+        # Paso 2: Construir punteros de filas para la transpuesta
+        p_filas_transpuesta = [0] * (num_columnas + 1)
+        for i in range(1, len(p_filas_transpuesta)):
+            p_filas_transpuesta[i] = p_filas_transpuesta[i - 1] + contador_filas_transpuesta[i - 1]
+
+        # Paso 3: Distribuir valores y filas en la transpuesta
+        valores_transpuesta = [0] * len(valores)
+        filas_transpuesta = [0] * len(valores)
+        posiciones_actuales = p_filas_transpuesta[:-1]  # Índices iniciales para cada fila transpuesta
+
+        for fila in range(num_filas_original):
+            for idx in range(p_filas[fila], p_filas[fila + 1]):
+                col = columnas[idx]
+                pos = posiciones_actuales[col]
+
+                valores_transpuesta[pos] = valores[idx]
+                filas_transpuesta[pos] = fila
+                posiciones_actuales[col] += 1
+
+        # Retornar la matriz transpuesta en formato CSR
+        return {
+            "valores": valores_transpuesta,
+            "columnas": filas_transpuesta,
+            "p-filas": p_filas_transpuesta
+        }
+        
+    elif formato == "CSC":
+        valores = matriz["valores"]
+        filas = matriz["filas"]
+        p_columnas = matriz["p-columnas"]
+
+        num_columnas_original = len(p_columnas) - 1
+        num_filas = max(filas) + 1
+
+        contador_columnas_transpuesta = [0] * num_filas
+        for fil in filas:
+            contador_columnas_transpuesta[fil] += 1
+
+        p_columnas_transpuesta = [0] * (num_filas + 1)
+        for i in range(1, len(p_columnas_transpuesta)):
+            p_columnas_transpuesta[i] = p_columnas_transpuesta[i - 1] + contador_columnas_transpuesta[i - 1]
+
+        valores_transpuesta = [0] * len(valores)
+        columnas_transpuesta = [0] * len(valores)
+        posiciones_actuales = p_columnas_transpuesta[:-1] 
+
+        for columna in range(num_columnas_original):
+            for idx in range(p_columnas[columna], p_columnas[columna + 1]):
+                fil = filas[idx]
+                pos = posiciones_actuales[fil]
+
+                valores_transpuesta[pos] = valores[idx]
+                columnas_transpuesta[pos] = columna
+                posiciones_actuales[fil] += 1
+
+        return {
+            "valores": valores_transpuesta,
+            "filas": columnas_transpuesta,
+            "p-columnas": p_columnas_transpuesta
+        }
+
+
+
+
+
+       

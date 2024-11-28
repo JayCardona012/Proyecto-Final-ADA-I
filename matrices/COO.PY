@@ -1,13 +1,4 @@
 def cargar_matriz(archivo):
-    """
-    Carga una matriz desde un archivo .txt.
-
-    Args:
-        archivo (str): Ruta del archivo que contiene la matriz.
-
-    Returns:
-        list[list[int]]: Matriz dispersa representada como lista de listas.
-    """
     matriz = []
     with open(archivo, 'r') as f:
         for linea in f:
@@ -15,35 +6,8 @@ def cargar_matriz(archivo):
             matriz.append(fila)
     return matriz
 
-def generar_coo_desde_archivo(archivo):
-    """
-    Genera la representación COO de una matriz cargada desde un archivo.
-
-    Args:
-        archivo (str): Ruta del archivo que contiene la matriz.
-
-    Returns:
-        dict: Representación en formato COO con claves:
-            - 'valores': Lista de valores distintos de cero.
-            - 'filas': Lista de índices de fila de los valores.
-            - 'columnas': Lista de índices de columna de los valores.
-    """
-    matriz = cargar_matriz(archivo)
-    return generar_coo(matriz)
 
 def generar_coo(matriz):
-    """
-    Genera la representación COO de una matriz dispersa.
-
-    Args:
-        matriz (list[list[int]]): Matriz dispersa representada como lista de listas.
-
-    Returns:
-        dict: Representación en formato COO con claves:
-            - 'valores': Lista de valores distintos de cero.
-            - 'filas': Lista de índices de fila de los valores.
-            - 'columnas': Lista de índices de columna de los valores.
-    """
     valores = []
     filas = []
     columnas = []
@@ -62,19 +26,16 @@ def generar_coo(matriz):
     }
 
 
+def generar_coo_desde_archivo(archivo):
+   
+    matriz = cargar_matriz(archivo)
+    return generar_coo(matriz)
+
+
+
+
 def matriz_desde_coo(coo):
-    """
-    Reconstruye una matriz dispersa a partir de su representación COO.
 
-    Args:
-        coo (dict): Representación COO con claves:
-            - 'valores': Lista de valores distintos de cero.
-            - 'filas': Lista de índices de fila.
-            - 'columnas': Lista de índices de columna.
-
-    Returns:
-        list[list[int]]: Matriz dispersa reconstruida.
-    """
     # Determinar las dimensiones de la matriz
     filas = coo["filas"]
     columnas = coo["columnas"]
@@ -88,4 +49,24 @@ def matriz_desde_coo(coo):
     for valor, fila, columna in zip(coo["valores"], filas, columnas):
         matriz[fila][columna] = valor
 
+    return matriz
+
+
+def cargar_representacion_coo(archivo):
+    with open(archivo, 'r') as f:
+        valores = f.readline().strip().split(":")[1].strip()[1:-1]
+        valores = list(map(int, valores.replace(",", " ").split()))
+        filas = f.readline().strip().split(":")[1].strip()[1:-1]
+        filas = list(map(int, filas.replace(",", " ").split()))
+        columnas = f.readline().strip().split(":")[1].strip()[1:-1]
+        columnas = list(map(int, columnas.replace(",", " ").split()))
+    return {"valores": valores, "filas": filas, "columnas": columnas}
+
+
+def reconstruir_matriz_coo(representacion):
+    m = max(representacion["filas"]) + 1
+    n = max(representacion["columnas"]) + 1
+    matriz = [[0] * n for _ in range(m)]
+    for valor, fila, columna in zip(representacion["valores"], representacion["filas"], representacion["columnas"]):
+        matriz[fila][columna] = valor
     return matriz

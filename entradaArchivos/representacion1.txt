@@ -1,3 +1,3 @@
-valores: [1 2 -3 13 8 7 6 5]
-columnas: [0 3 5 1 2 3 0 2]
-p-filas: [0 3 5 6 6 7 8]
+valores : [1 6 4 8 5 2 7 -3]
+filas: [0 4 1 1 5 0 2 0]
+p-columnas: [0 2 3 5 7 7 8]

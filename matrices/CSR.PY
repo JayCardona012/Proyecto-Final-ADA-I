@@ -1,16 +1,5 @@
 def generar_csr(matriz):
-    """
-    Genera la representación CSR de una matriz dispersa.
-
-    Args:
-        matriz (list[list[int]]): Matriz dispersa representada como lista de listas.
-
-    Returns:
-        dict: Representación en formato CSR con claves:
-            - 'valores': Lista de valores distintos de cero.
-            - 'columnas': Lista de índices de columna de los valores.
-            - 'p_filas': Lista de posiciones donde inician los valores de cada fila.
-    """
+   
     valores = []
     columnas = []
     p_filas = [0]  # Siempre empieza en 0
@@ -31,28 +20,12 @@ def generar_csr(matriz):
     }
 
 def generar_csr_desde_archivo(archivo):
-    """
-    Genera la representación CSR de una matriz cargada desde un archivo.
-
-    Args:
-        archivo (str): Ruta del archivo que contiene la matriz.
-
-    Returns:
-        dict: Representación en formato CSR.
-    """
+ 
     matriz = cargar_matriz(archivo)
     return generar_csr(matriz)
 
 def cargar_matriz(archivo):
-    """
-    Carga una matriz desde un archivo .txt.
-
-    Args:
-        archivo (str): Ruta del archivo que contiene la matriz.
-
-    Returns:
-        list[list[int]]: Matriz dispersa representada como lista de listas.
-    """
+   
     matriz = []
     with open(archivo, 'r') as f:
         for linea in f:
@@ -62,18 +35,7 @@ def cargar_matriz(archivo):
 
 
 def matriz_desde_csr(csr):
-    """
-    Reconstruye una matriz dispersa a partir de su representación CSR.
-
-    Args:
-        csr (dict): Representación CSR con claves:
-            - 'valores': Lista de valores distintos de cero.
-            - 'columnas': Lista de índices de columna.
-            - 'p_filas': Lista de posiciones donde inician los valores por fila.
-
-    Returns:
-        list[list[int]]: Matriz dispersa reconstruida.
-    """
+   
     p_filas = csr["p_filas"]
     columnas = csr["columnas"]
     valores = csr["valores"]
@@ -89,4 +51,30 @@ def matriz_desde_csr(csr):
         for j in range(start, end):
             matriz[i][columnas[j]] = valores[j]
 
+    return matriz
+
+
+
+def cargar_representacion_csr(archivo):
+    with open(archivo, 'r') as f:
+        valores = f.readline().strip().split(":")[1].strip()[1:-1]
+        valores = list(map(int, valores.replace(",", " ").split()))
+        columnas = f.readline().strip().split(":")[1].strip()[1:-1]
+        columnas = list(map(int, columnas.replace(",", " ").split()))
+        p_filas = f.readline().strip().split(":")[1].strip()[1:-1]
+        p_filas = list(map(int, p_filas.replace(",", " ").split()))
+    return {"valores": valores, "columnas": columnas, "p_filas": p_filas}
+
+
+
+
+def reconstruir_matriz_csr(representacion):
+    m = len(representacion["p_filas"]) - 1
+    n = max(representacion["columnas"]) + 1
+    matriz = [[0] * n for _ in range(m)]
+    for fila in range(m):
+        inicio = representacion["p_filas"][fila]
+        fin = representacion["p_filas"][fila + 1]
+        for idx in range(inicio, fin):
+            matriz[fila][representacion["columnas"][idx]] = representacion["valores"][idx]
     return matriz

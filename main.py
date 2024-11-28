@@ -1,7 +1,7 @@
-from matrices.COO import generar_coo_desde_archivo
-from matrices.CSR import generar_csr_desde_archivo
-from matrices.CSC import generar_csc_desde_archivo
-from operaciones.operaciones import obtener_elemento, seleccionar_formato, obtener_fila, obtener_columna, modificar_elemento, guardar_representacion, sumar_matrices, guardar_representacion_operaciones
+from matrices.COO import generar_coo_desde_archivo, cargar_representacion_coo, reconstruir_matriz_coo
+from matrices.CSR import generar_csr_desde_archivo, cargar_representacion_csr, reconstruir_matriz_csr
+from matrices.CSC import generar_csc_desde_archivo, cargar_representacion_csc, reconstruir_matriz_csc
+from operaciones.operaciones import obtener_elemento, seleccionar_formato, obtener_fila, obtener_columna, modificar_elemento, guardar_representacion, sumar_matrices, guardar_representacion_operaciones, transponer_matriz
 def menu_principal():
     while True:
         print("\n--- Menú Principal ---")
@@ -51,9 +51,7 @@ def menu_obtener_representacion():
             print("Opción inválida. Intente nuevamente.")
 
 def menu_otras_operaciones():
-    """
-    Muestra el menú para realizar otras operaciones.
-    """
+  
     archivo_representacion = "entradaArchivos/representacion1.txt"
     archivo_salida = "entradaArchivos/representacionSalida.txt"
     
@@ -65,7 +63,8 @@ def menu_otras_operaciones():
         print("4. Obtener una columna dado su índice (j)")
         print("5. Modificar un elemento dados sus indices (i, j) y su valor (x)")
         print("6. suma de matrices")
-        print("7. Volver al menu principal")
+        print("7. Transponer matriz")
+        print("8. Volver al menu principal")
         
         opcion = input("Seleccione una opción: ")
         
@@ -142,11 +141,29 @@ def menu_otras_operaciones():
                     print(f"Error al sumar las matrices: {e}")
             else:
                 print("Error: Una o ambas representaciones no coinciden con el formato seleccionado.")
+            
 
 
-                
-        elif opcion == "7":
+
+        elif opcion == "7":  # Transponer matriz
+            formato = seleccionar_formato()
+                # Validar formato antes de cargar
+            if validar_representacion("entradaArchivos/representacion1.txt", formato):
+                matriz = cargar_representacion("entradaArchivos/representacion1.txt", formato)
+                try:
+                    traspuesta = transponer_matriz(matriz, formato)
+                    guardar_representacion(traspuesta, formato, "entradaArchivos/representacionSalida.txt")
+                    print(f"Matriz transpuesta guardada en 'entradaArchivos/representacionSalida.txt' en formato {formato}.")
+                except Exception as e:
+                    print(f"Error al transponer la matriz: {e}")
+            else:
+                print("Error: El archivo no contiene una representación válida para el formato seleccionado.")
+            
+
+
+        elif opcion == "8":
             break
+
         else:
             print("Opción inválida. Intente nuevamente.")
 
@@ -193,31 +210,27 @@ def menu_obtener_matriz(archivo_representacion, archivo_salida):
 
 
 def validar_representacion(archivo, formato):
- 
+   
     try:
         with open(archivo, 'r') as f:
             contenido = f.readlines()
-        
+
+        # Convertir el contenido del archivo en un diccionario
+        contenido_dict = {linea.split(":")[0].strip(): linea.split(":")[1].strip() for linea in contenido}
+
         if formato == "COO":
-            valores = "valores" in contenido[0]
-            filas = "filas" in contenido[1]
-            columnas = "columnas" in contenido[2]
-            return valores and filas and columnas
+            # Verificar que existan las claves requeridas para COO
+            return "valores" in contenido_dict and "filas" in contenido_dict and "columnas" in contenido_dict
         elif formato == "CSR":
-            valores = "valores" in contenido[0]
-            columnas = "columnas" in contenido[1]
-            p_filas = "p-filas" in contenido[2]
-            return valores and columnas and p_filas
+            # Verificar que existan las claves requeridas para CSR
+            return "valores" in contenido_dict and "columnas" in contenido_dict and "p-filas" in contenido_dict
         elif formato == "CSC":
-            valores = "valores" in contenido[0]
-            filas = "filas" in contenido[1]
-            p_columnas = "p-columnas" in contenido[2]
-            return valores and filas and p_columnas
+            # Verificar que existan las claves requeridas para CSC
+            return "valores" in contenido_dict and "filas" in contenido_dict and "p-columnas" in contenido_dict
         return False
     except Exception as e:
         print(f"Error al validar la representación: {e}")
         return False
-
             
 
 def guardar_matriz_en_archivo(matriz, archivo_salida):
@@ -227,65 +240,7 @@ def guardar_matriz_en_archivo(matriz, archivo_salida):
             f.write(" ".join(map(str, fila)) + "\n")
     print(f"Matriz guardada en {archivo_salida}")
 
-def cargar_representacion_coo(archivo):
-    with open(archivo, 'r') as f:
-        valores = f.readline().strip().split(":")[1].strip()[1:-1]
-        valores = list(map(int, valores.replace(",", " ").split()))
-        filas = f.readline().strip().split(":")[1].strip()[1:-1]
-        filas = list(map(int, filas.replace(",", " ").split()))
-        columnas = f.readline().strip().split(":")[1].strip()[1:-1]
-        columnas = list(map(int, columnas.replace(",", " ").split()))
-    return {"valores": valores, "filas": filas, "columnas": columnas}
 
-def cargar_representacion_csr(archivo):
-    with open(archivo, 'r') as f:
-        valores = f.readline().strip().split(":")[1].strip()[1:-1]
-        valores = list(map(int, valores.replace(",", " ").split()))
-        columnas = f.readline().strip().split(":")[1].strip()[1:-1]
-        columnas = list(map(int, columnas.replace(",", " ").split()))
-        p_filas = f.readline().strip().split(":")[1].strip()[1:-1]
-        p_filas = list(map(int, p_filas.replace(",", " ").split()))
-    return {"valores": valores, "columnas": columnas, "p_filas": p_filas}
-
-def cargar_representacion_csc(archivo):
-    with open(archivo, 'r') as f:
-        valores = f.readline().strip().split(":")[1].strip()[1:-1]
-        valores = list(map(int, valores.replace(",", " ").split()))
-        filas = f.readline().strip().split(":")[1].strip()[1:-1]
-        filas = list(map(int, filas.replace(",", " ").split()))
-        p_columnas = f.readline().strip().split(":")[1].strip()[1:-1]
-        p_columnas = list(map(int, p_columnas.replace(",", " ").split()))
-    return {"valores": valores, "filas": filas, "p_columnas": p_columnas}
-
-def reconstruir_matriz_coo(representacion):
-    m = max(representacion["filas"]) + 1
-    n = max(representacion["columnas"]) + 1
-    matriz = [[0] * n for _ in range(m)]
-    for valor, fila, columna in zip(representacion["valores"], representacion["filas"], representacion["columnas"]):
-        matriz[fila][columna] = valor
-    return matriz
-
-def reconstruir_matriz_csr(representacion):
-    m = len(representacion["p_filas"]) - 1
-    n = max(representacion["columnas"]) + 1
-    matriz = [[0] * n for _ in range(m)]
-    for fila in range(m):
-        inicio = representacion["p_filas"][fila]
-        fin = representacion["p_filas"][fila + 1]
-        for idx in range(inicio, fin):
-            matriz[fila][representacion["columnas"][idx]] = representacion["valores"][idx]
-    return matriz
-
-def reconstruir_matriz_csc(representacion):
-    n = len(representacion["p_columnas"]) - 1
-    m = max(representacion["filas"]) + 1
-    matriz = [[0] * n for _ in range(m)]
-    for columna in range(n):
-        inicio = representacion["p_columnas"][columna]
-        fin = representacion["p_columnas"][columna + 1]
-        for idx in range(inicio, fin):
-            matriz[representacion["filas"][idx]][columna] = representacion["valores"][idx]
-    return matriz
 
 def cargar_representacion(archivo, formato):
 
@@ -312,8 +267,6 @@ def cargar_representacion(archivo, formato):
         }
     else:
         raise ValueError("Formato no soportado.")
-
-
 
 if __name__ == "__main__":
     menu_principal()
